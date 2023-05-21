@@ -64,34 +64,35 @@ public class RoomController {
 
     }
 
-    @CrossOrigin
+    @CrossOrigin(origins = { "*" })
     @GetMapping("/res/{id}/{stdin}")
     public JSONObject compileRes(@PathVariable String id , @PathVariable String stdin) throws Exception {
 //        try {
-            Room room = roomService.find(id);
-            String str = room.getCode();
-            String encoded = roomService.getEncodedCode(str);
-            String urlpost = "https://judge0-ce.p.rapidapi.com/submissions?base64_encoded=true&fields=*";
+        Room room = roomService.find(id);
+        String str = room.getCode();
+        String getLang = room.getLanguage();
+        String encoded = roomService.getEncodedCode(str);
+        String urlpost = "https://judge0-ce.p.rapidapi.com/submissions?base64_encoded=true&fields=*";
+        System.out.println(getLang);
+        String temp = "{\"language_id\": \""+getLang+"\",\"source_code\": \""+encoded+"\",\"stdin\": \""+stdin+"\"}";
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.set("X-RapidAPI-Key","0fbf3a83d9mshb98fa5625fbee9ep140cccjsn2170a61c54d9");
+        headers.set("X-RapidAPI-Host", "judge0-ce.p.rapidapi.com");
+        RestTemplate restTemplate = new RestTemplate();
+        HttpEntity entity = new HttpEntity(temp,headers);
+        ResponseEntity<JSONObject> res = restTemplate.exchange(urlpost,HttpMethod.POST,entity, JSONObject.class);
+        System.out.println(res);
 
-            String temp = "{\"language_id\": 52,\"source_code\": \""+encoded+"\",\"stdin\": \""+stdin+"\"}";
-            HttpHeaders headers = new HttpHeaders();
-            headers.setContentType(MediaType.APPLICATION_JSON);
-            headers.set("X-RapidAPI-Key","0fbf3a83d9mshb98fa5625fbee9ep140cccjsn2170a61c54d9");
-            headers.set("X-RapidAPI-Host", "judge0-ce.p.rapidapi.com");
-            RestTemplate restTemplate = new RestTemplate();
-            HttpEntity entity = new HttpEntity(temp,headers);
-            ResponseEntity<JSONObject> res = restTemplate.exchange(urlpost,HttpMethod.POST,entity, JSONObject.class);
-            System.out.println(res);
+        JSONObject token_val = res.getBody();
+        String token = token_val.get("token").toString();
 
-            JSONObject token_val = res.getBody();
-            String token = token_val.get("token").toString();
-
-            String urlget = "https://judge0-ce.p.rapidapi.com/submissions/"+token;
-            ResponseEntity<JSONObject> ans = restTemplate.exchange(urlget,HttpMethod.GET,entity, JSONObject.class);
-            JSONObject ans_output = ans.getBody();
+        String urlget = "https://judge0-ce.p.rapidapi.com/submissions/"+token;
+        ResponseEntity<JSONObject> ans = restTemplate.exchange(urlget,HttpMethod.GET,entity, JSONObject.class);
+        JSONObject ans_output = ans.getBody();
 //            String output = ans_output.get("stdout").toString();
 //            System.out.println(output);
-            return ans_output;
+        return ans_output;
 //        }
 //        catch (Exception e){
 //            e.printStackTrace();
